@@ -1,9 +1,7 @@
 import java.awt.*;
 import javax.swing.*;
-import javax.swing.text.DefaultStyledDocument.ElementSpec;
-
 import java.awt.event.*;
-import java.util.random.RandomGeneratorFactory;
+
 
 public class RayPanel extends JPanel {
    private static double px = 512 / 2, py = 512 / 2;
@@ -12,6 +10,15 @@ public class RayPanel extends JPanel {
    private static double xBase = 0, yOpp = 0;
    private static double hrx = 0, hry = 0, vrx = 0, vry = 0;
    private static double distOfRay = 0;
+   private final static int playerHeight = 32;
+   private final static int projectionPlaneX = 512;
+   private final static int projectionPlaneY = 512-64;
+   private final static int fieldOfView = 128;
+   private final static double radPerDeg = (Math.PI)/360.0;
+   private final static double fieldOfViewRads = 128*radPerDeg;
+   private final static double angleBetweenEachRay = fieldOfView/(double)projectionPlaneX;
+   private final static double angleBetweenEachRayRad = angleBetweenEachRay*radPerDeg;
+   private final static int projectionPlaneDistanceFromPlayer = (int)((projectionPlaneX/2)*Math.tan(fieldOfViewRads));
    private JPanel leftPanel = new JPanel(), rightPanel = new JPanel();
    private static int[][] gridNum = { 
          { 1, 1, 1, 1, 1, 1, 1, 1 },
@@ -118,7 +125,7 @@ public class RayPanel extends JPanel {
                hrx = xBase + px;
                hry = py - yOpp;
                int mx = (int) (hrx/ 64.0);
-               int my = (int) (hry / 64);
+               int my = (int) (hry / 64.0);
                if ((hrx>0 && hrx<512)&&(hry>0&& hry<512)) {
                   if (gridNum[mx][my] == 1) {
                      
@@ -150,7 +157,7 @@ public class RayPanel extends JPanel {
                      }
 
                      int mx = (int) ((hrx - 0.001) / 64.0);
-                     int my = (int) ((hry - 0.001) / 64);
+                     int my = (int) ((hry - 0.001) / 64.0);
                if ((hrx>0 && hrx<512)&&(hry>0&&hry<512)){
                   if (gridNum[mx][my] == 1) {
                      count = 11;
@@ -187,12 +194,12 @@ public class RayPanel extends JPanel {
                }
                vrx = (px + xBase);
                if ((vrx > 0 && vrx < 512) && (vry > 0 && vry < 512)) {
-                  int mx = (int) (Math.floor(vrx / 64));
+                  int mx = (int) (Math.floor(vrx / 64.0));
                   int my;
                   if (ra < Math.PI / 2) {
-                     my = (int) (Math.floor((vry - 0.001) / 64));
+                     my = (int) (Math.floor((vry - 0.001) / 64.0));
                   } else {
-                     my = (int) (Math.floor(vry / 64));
+                     my = (int) (Math.floor(vry / 64.0));
                   }
                  
 
@@ -221,12 +228,12 @@ public class RayPanel extends JPanel {
                }
                vrx = (px - xBase);
                if ((vrx > 0 && vrx < 512) && (vry > 0 && vry < 512)) {
-                  int mx = (int) (Math.floor(vrx / 64));
+                  int mx = (int) (Math.floor(vrx / 64.0));
                   int my;
                   if (ra < Math.PI) {
-                     my = (int) (Math.floor((vry - 0.01) / 64));
+                     my = (int) (Math.floor((vry - 0.01) / 64.0));
                   } else {
-                     my = (int) (Math.floor((vry) / 64));
+                     my = (int) (Math.floor((vry) / 64.0));
                   }
                   
                      if (gridNum[mx][my] == 1) {
@@ -244,13 +251,12 @@ public class RayPanel extends JPanel {
       }
 
       public static void drawRays(Graphics g) {
-         double radPerDeg = (Math.PI) / 360;
          double vertDistance, horzDistance;
          double wallHeight = 0;
          horzDistance = detectHorDis(g, pa);
          vertDistance = detectVerDis(g, pa);
             int count=0;
-         for (double ra=pa+64*radPerDeg;ra>pa-64*radPerDeg;ra-=radPerDeg){
+         for (double ra=pa+fieldOfViewRads/2.0;ra>pa-fieldOfViewRads/2.0;ra-=angleBetweenEachRayRad){
             double ta;
             if (ra>2*Math.PI){
                ta=ra-2*Math.PI;
@@ -278,9 +284,10 @@ public class RayPanel extends JPanel {
                g.drawLine((int) px, (int) py, (int) hrx, (int) hry);
                wallHeight=50*(512/actualHorzDistance)+50;
             } 
-            g.fillRect(512+count*4, (int)(256-wallHeight/2), 4, (int)wallHeight);
+            g.fillRect(512+count, (int)(256-wallHeight/2), 4, (int)wallHeight);
             count++;
          }
+         System.out.println(count + " " + (pa+fieldOfViewRads/2.0) + " " + (pa-fieldOfViewRads/2.0) + " " + (angleBetweenEachRayRad));
       
          
 

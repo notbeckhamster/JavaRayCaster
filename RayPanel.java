@@ -6,7 +6,7 @@ import java.awt.event.*;
 public class RayPanel extends JPanel {
    private static double px = 512 / 2, py = 512 / 2;
    private static double pa = 0;
-   private static int x0 = 64, y0 = 64;
+   private static int blockSize = 64;
    private static double xBase = 0, yOpp = 0;
    private static double hrx = 0, hry = 0, vrx = 0, vry = 0;
    private static double distOfRay = 0;
@@ -56,13 +56,13 @@ public class RayPanel extends JPanel {
          px -= (Math.ceil(5 * Math.cos(pa)));
          py += (Math.ceil(5 * Math.sin(pa)));
       } else if (key.equals("left")) {
-         if (pa > 2 * Math.PI) {
-            pa = 0.001;
+         if (pa > 2*Math.PI) {
+            pa = 2 * Math.PI;
          }
          pa += 0.05;
       } else if (key.equals("right")) {
-         if (pa < 0) {
-            pa = 2 * Math.PI;
+         if (pa < 0 ) {
+            pa += 2*Math.PI;
          }
          pa -= 0.05;
       }
@@ -113,72 +113,25 @@ public class RayPanel extends JPanel {
          drawRays(g);
       }
 
-      public static double detectHorDis(Graphics g, double ra) {
+      public static int[] detectHorDis(Graphics g, double rayAngle) {
 
-         int count = 0;
-         if (ra < Math.PI / 2 || ra > (3 * Math.PI) / 2) {
-            while (count < 12) {
-               xBase = (64 - (px % 64)) + x0 * count;
-               yOpp = xBase * Math.tan(ra);
+         boolean isUp = rayAngle < Math.PI;
+         int firstIntersectionY = isUp ? (int)(Math.floor(py/64)*64-1) : (int)(Math.floor(py/64)*64+64);
+         int firstIntersectionX = (int)(px + (py-firstIntersectionY)/Math.tan(rayAngle));
+         int[] curr = new int[]{firstIntersectionX, firstIntersectionY};
+         int offsetY = isUp ? -blockSize : blockSize;
+         int offsetX = (int)(blockSize/Math.tan(rayAngle));
 
-              
-               hrx = xBase + px;
-               hry = py - yOpp;
-               int mx = (int) (hrx/ 64.0);
-               int my = (int) (hry / 64.0);
-               if ((hrx>0 && hrx<512)&&(hry>0&& hry<512)) {
-                  if (gridNum[mx][my] == 1) {
-                     
-
-                     count = 11;
-                  }
-               } else {
-                  count = 11;
-               }
-               
-               count++;
-            }
-
-         } else if (ra > Math.PI / 2 && ra < (3 * Math.PI) / 2) {
-            while (count < 12) {
-               xBase = ((px % 64)) + x0 * count;
-               if (ra < Math.PI ) {
-                  yOpp = xBase * Math.tan(Math.PI - ra);
-               } else {
-                  yOpp = xBase * Math.tan(ra - Math.PI);
-               }
-
-              
-               hrx = px - xBase;
-                     if (ra > Math.PI/2 && ra < Math.PI) {
-                        hry = py - yOpp;
-                     } else {
-                        hry = py + yOpp;
-                     }
-
-                     int mx = (int) ((hrx - 0.001) / 64.0);
-                     int my = (int) ((hry - 0.001) / 64.0);
-               if ((hrx>0 && hrx<512)&&(hry>0&&hry<512)){
-                  if (gridNum[mx][my] == 1) {
-                     count = 11;
-
-                  
-               }
-            }else{
-               count=11;
-
-            }
-               
-               
-
-               count++;
-            }
-
+         while (true){
+            if (((curr[0]<0 || curr[0]>512) || (curr[1]<0 || curr[1]>512))) return new int[]{0,0};
+            if (gridNum[curr[0]/64][curr[1]/64] == 1) return new int[]{curr[0], curr[1]};
+            curr[0] += offsetX;
+            curr[1] += offsetY;
          }
-         return Math.sqrt(Math.pow((px - hrx), 2) + Math.pow((py - hry), 2));
+
       }
 
-      public static double detectVerDis(Graphics g, double ra) {
+      /* public static double detectVerDis(Graphics g, double ra) {
          int count = 0;
          if (ra < Math.PI / 2 || ra > 3 * Math.PI / 2) {
             while (count < 12) {
@@ -228,7 +181,7 @@ public class RayPanel extends JPanel {
                }
                vrx = (px - xBase);
                if ((vrx > 0 && vrx < 512) && (vry > 0 && vry < 512)) {
-                  int mx = (int) (Math.floor(vrx / 64.0));
+                  int mx = (int) (Math.floor(fg / 64.0));
                   int my;
                   if (ra < Math.PI) {
                      my = (int) (Math.floor((vry - 0.01) / 64.0));
@@ -249,52 +202,27 @@ public class RayPanel extends JPanel {
 
          return Math.sqrt(Math.pow((px - vrx), 2) + Math.pow((py - vry), 2));
       }
-
+ */
       public static void drawRays(Graphics g) {
-         double vertDistance, horzDistance;
-         double wallHeight = 0;
+         int[] horzDistance;
          horzDistance = detectHorDis(g, pa);
-         vertDistance = detectVerDis(g, pa);
-            int count=0;
-         for (double ra=pa+fieldOfViewRads/2.0;ra>pa-fieldOfViewRads/2.0;ra-=angleBetweenEachRayRad){
-            double ta;
-            if (ra>2*Math.PI){
-               ta=ra-2*Math.PI;
-            } else if (ra<0){
-               ta=ra+2*Math.PI;
-            } else{
-               ta=ra;
-            }
-            horzDistance = detectHorDis(g, ta);
-            vertDistance = detectVerDis(g, ta);
-            double actualHorzDistance, actualVertDistance;
-            if (ra>pa){
-            actualHorzDistance = horzDistance*Math.cos(ta-pa);
-            actualVertDistance = vertDistance*Math.cos(ta-pa);
-            }else{
-               actualHorzDistance = horzDistance*Math.cos(pa-ta);
-               actualVertDistance = vertDistance*Math.cos(pa-ta);
-            }
-            if (actualHorzDistance > actualVertDistance) {
-               g.setColor(Color.blue);
-               g.drawLine((int) px , (int) py, (int) vrx, (int) vry);
-               wallHeight=50*(512/actualVertDistance)+50;
-            } else if (actualVertDistance > actualHorzDistance) {
-               g.setColor(Color.red);
-               g.drawLine((int) px, (int) py, (int) hrx, (int) hry);
-               wallHeight=50*(512/actualHorzDistance)+50;
-            } 
-            g.fillRect(512+count, (int)(256-wallHeight/2), 4, (int)wallHeight);
-            count++;
+         //vertDistance = detectVerDis(g, pa);
+
+         g.setColor(Color.blue);
+         g.drawLine((int) px , (int) py, (int) horzDistance[0], (int) horzDistance[1]);
+         g.setColor(Color.green);
+         Graphics2D g2d = (Graphics2D) g;
+         g2d.setStroke(new BasicStroke(2.0F));
+         g2d.drawLine((int) px , (int) py, (int) (px + 30*Math.cos(pa)), (int) (py- 30*Math.sin(pa)));
+
          }
-         System.out.println(count + " " + (pa+fieldOfViewRads/2.0) + " " + (pa-fieldOfViewRads/2.0) + " " + (angleBetweenEachRayRad));
-      
+ 
          
 
 
-      }
+      
 
-   }
+   
 
    public static void drawPlayer(Graphics g) {
       g.setColor(Color.red);
@@ -325,4 +253,5 @@ public class RayPanel extends JPanel {
          xCord = 0;
       }
    }
+}
 }
